@@ -22,6 +22,20 @@ class D2RArbitrageMonitor {
         this.bindEvents();
         this.loadPrices();
         this.startAutoRefresh();
+        this.setupMessageListener();
+    }
+    
+    setupMessageListener() {
+        // 监听来自后台的价格更新
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === 'pricesUpdated') {
+                console.log('收到价格更新:', message.prices);
+                this.prices = message.prices;
+                this.renderTable();
+                this.updateLastUpdateTime(new Date().toISOString());
+            }
+            return true;
+        });
     }
     
     bindEvents() {

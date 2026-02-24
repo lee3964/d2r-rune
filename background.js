@@ -49,6 +49,13 @@ class BackgroundService {
                     sendResponse({ success: true, prices: storedPrices });
                     break;
                     
+                case 'pagePrices':
+                    // 接收来自内容脚本的价格数据
+                    console.log(`收到${message.site}价格数据:`, message.prices);
+                    this.processPagePrices(message.site, message.prices);
+                    sendResponse({ success: true });
+                    break;
+                    
                 default:
                     sendResponse({ success: false, error: '未知操作' });
             }
@@ -56,6 +63,48 @@ class BackgroundService {
             console.error('处理消息时出错:', error);
             sendResponse({ success: false, error: error.message });
         }
+    }
+    
+    processPagePrices(site, prices) {
+        // 更新存储的价格
+        chrome.storage.local.get(['d2rPrices'], (result) => {
+            const currentPrices = result.d2rPrices || {};
+            const updatedPrices = { ...currentPrices };
+            
+            // 更新对应网站的价格
+            Object.keys(prices).forEach(rune => {
+                if (!updatedPrices[rune]) {
+                    updatedPrices[rune] = {
+                        rune,
+                        name: RUNE_MAPPING[rune]?.name || '未知',
+                        g2gPrice: null,
+                        dd373Price: null,
+                        lastUpdated: null
+                    };
+                }
+                
+                if (site === 'g2g') {
+                    updatedPrices[rune].g2gPrice = prices[rune];
+                } else if (site === 'dd373') {
+                    updatedPrices[rune].dd373Price = prices[rune];
+                }
+                
+                updatedPrices[rune].lastUpdated = new Date().toISOString();
+            });
+            
+            // 保存更新后的价格
+            chrome.storage.local.set({ d2rPrices: updatedPrices }, () => {
+                console.log('价格数据已更新');
+                
+                // 发送通知给popup
+                chrome.runtime.sendMessage({
+                    action: 'pricesUpdated',
+                    prices: updatedPrices
+                }).catch(() => {
+                    // popup可能未打开，忽略错误
+                });
+            });
+        });
     }
     
     onInstalled() {

@@ -1,9 +1,10 @@
-// D2R符文套利监控器 - 内容脚本
-// 在目标网站页面上运行，用于提取价格数据
+// D2R符文套利监控器 - 改进的内容脚本
 
-class PageScraper {
+class D2RPriceScraper {
     constructor() {
         this.currentSite = this.detectSite();
+        this.runePatterns = this.getRunePatterns();
+        this.prices = {};
         this.init();
     }
     
@@ -17,235 +18,8 @@ class PageScraper {
         return null;
     }
     
-    init() {
-        if (!this.currentSite) return;
-        
-        console.log(`D2R监控器: 检测到${this.currentSite.toUpperCase()}网站`);
-        
-        // 监听页面变化
-        this.observePageChanges();
-        
-        // 初始提取
-        this.extractPrices();
-    }
-    
-    observePageChanges() {
-        // 使用MutationObserver监听DOM变化
-        const observer = new MutationObserver((mutations) => {
-            let shouldExtract = false;
-            
-            for (const mutation of mutations) {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    shouldExtract = true;
-                    break;
-                }
-            }
-            
-            if (shouldExtract) {
-                setTimeout(() => this.extractPrices(), 500);
-            }
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    }
-    
-    extractPrices() {
-        const prices = this.currentSite === 'g2g' 
-            ? this.extractG2GPrices() 
-            : this.extractDD373Prices();
-        
-        if (Object.keys(prices).length > 0) {
-            this.sendPricesToBackground(prices);
-        }
-    }
-    
-    extractG2GPrices() {
-        const prices = {};
-        
-        try {
-            // G2G网站价格提取逻辑
-            // 根据实际页面结构调整选择器
-            
-            // 方法1: 尝试常见的选择器
-            const selectors = [
-                '.product-item',
-                '.offer-item', 
-                '.listing-item',
-                '[class*="item"][class*="product"]',
-                '[class*="item"][class*="offer"]'
-            ];
-            
-            let items = [];
-            for (const selector of selectors) {
-                const found = document.querySelectorAll(selector);
-                if (found.length > 0) {
-                    items = found;
-                    break;
-                }
-            }
-            
-            items.forEach(item => {
-                try {
-                    // 提取标题
-                    const titleSelectors = [
-                        '.product-title',
-                        '.offer-title',
-                        '.title',
-                        '[class*="title"]',
-                        'h3', 'h4'
-                    ];
-                    
-                    let title = '';
-                    for (const selector of titleSelectors) {
-                        const element = item.querySelector(selector);
-                        if (element) {
-                            title = element.textContent.trim();
-                            break;
-                        }
-                    }
-                    
-                    if (!title) return;
-                    
-                    // 提取符文信息
-                    const rune = this.extractRuneFromTitle(title);
-                    if (!rune) return;
-                    
-                    // 提取价格
-                    const priceSelectors = [
-                        '.product-price',
-                        '.offer-price',
-                        '.price',
-                        '[class*="price"]',
-                        '.amount',
-                        '.cost'
-                    ];
-                    
-                    let priceText = '';
-                    for (const selector of priceSelectors) {
-                        const element = item.querySelector(selector);
-                        if (element) {
-                            priceText = element.textContent.trim();
-                            break;
-                        }
-                    }
-                    
-                    const price = this.extractPriceFromText(priceText);
-                    if (!price) return;
-                    
-                    // 保存最低价
-                    if (!prices[rune] || price < prices[rune]) {
-                        prices[rune] = price;
-                    }
-                    
-                } catch (error) {
-                    console.error('提取单个商品失败:', error);
-                }
-            });
-            
-        } catch (error) {
-            console.error('提取G2G价格失败:', error);
-        }
-        
-        console.log('G2G提取结果:', prices);
-        return prices;
-    }
-    
-    extractDD373Prices() {
-        const prices = {};
-        
-        try {
-            // DD373网站价格提取逻辑
-            // 根据实际页面结构调整选择器
-            
-            // 方法1: 尝试常见的选择器
-            const selectors = [
-                '.goods-item',
-                '.item',
-                '.product',
-                '.list-item',
-                '[class*="item"]'
-            ];
-            
-            let items = [];
-            for (const selector of selectors) {
-                const found = document.querySelectorAll(selector);
-                if (found.length > 0) {
-                    items = found;
-                    break;
-                }
-            }
-            
-            items.forEach(item => {
-                try {
-                    // 提取标题
-                    const titleSelectors = [
-                        '.goods-name',
-                        '.item-title',
-                        '.title',
-                        '.name',
-                        'h3', 'h4'
-                    ];
-                    
-                    let title = '';
-                    for (const selector of titleSelectors) {
-                        const element = item.querySelector(selector);
-                        if (element) {
-                            title = element.textContent.trim();
-                            break;
-                        }
-                    }
-                    
-                    if (!title) return;
-                    
-                    // 提取符文信息
-                    const rune = this.extractRuneFromTitle(title);
-                    if (!rune) return;
-                    
-                    // 提取价格
-                    const priceSelectors = [
-                        '.goods-price',
-                        '.item-price',
-                        '.price',
-                        '.cost',
-                        '.amount'
-                    ];
-                    
-                    let priceText = '';
-                    for (const selector of priceSelectors) {
-                        const element = item.querySelector(selector);
-                        if (element) {
-                            priceText = element.textContent.trim();
-                            break;
-                        }
-                    }
-                    
-                    const price = this.extractPriceFromText(priceText);
-                    if (!price) return;
-                    
-                    // 保存最低价
-                    if (!prices[rune] || price < prices[rune]) {
-                        prices[rune] = price;
-                    }
-                    
-                } catch (error) {
-                    console.error('提取单个商品失败:', error);
-                }
-            });
-            
-        } catch (error) {
-            console.error('提取DD373价格失败:', error);
-        }
-        
-        console.log('DD373提取结果:', prices);
-        return prices;
-    }
-    
-    extractRuneFromTitle(title) {
-        // 符文映射
-        const runePatterns = {
+    getRunePatterns() {
+        return {
             '23#': ['23#', 'Mal', '马尔'],
             '24#': ['24#', 'Ist', '伊斯特'],
             '25#': ['25#', 'Gul', '古尔'],
@@ -258,22 +32,180 @@ class PageScraper {
             '32#': ['32#', 'Cham', '查姆'],
             '33#': ['33#', 'Zod', '萨德']
         };
+    }
+    
+    init() {
+        if (!this.currentSite) return;
         
-        for (const [rune, patterns] of Object.entries(runePatterns)) {
-            for (const pattern of patterns) {
-                if (title.includes(pattern)) {
-                    return rune;
+        console.log(`D2R监控器: 检测到${this.currentSite.toUpperCase()}网站`);
+        
+        // 开始监控
+        this.startMonitoring();
+        
+        // 添加监控UI
+        this.addMonitoringUI();
+    }
+    
+    startMonitoring() {
+        // 初始提取
+        this.extractPrices();
+        
+        // 定时监控（每10秒）
+        this.monitorInterval = setInterval(() => {
+            this.extractPrices();
+        }, 10000);
+        
+        // 监听页面变化
+        this.setupMutationObserver();
+    }
+    
+    setupMutationObserver() {
+        const observer = new MutationObserver(() => {
+            setTimeout(() => this.extractPrices(), 1000);
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        });
+        
+        this.observer = observer;
+    }
+    
+    extractPrices() {
+        console.log(`提取${this.currentSite.toUpperCase()}价格...`);
+        
+        const newPrices = this.currentSite === 'g2g' 
+            ? this.extractG2GPrices() 
+            : this.extractDD373Prices();
+        
+        if (Object.keys(newPrices).length > 0) {
+            this.prices = newPrices;
+            this.sendPricesToBackground(newPrices);
+            this.updateMonitoringUI(newPrices);
+        }
+    }
+    
+    extractG2GPrices() {
+        const prices = {};
+        
+        try {
+            // 方法1: 搜索整个页面
+            const allText = document.body.textContent;
+            const lines = allText.split('\n');
+            
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.length < 10) return;
+                
+                // 查找符文
+                const rune = this.findRuneInText(trimmed);
+                if (!rune) return;
+                
+                // 查找价格
+                const price = this.extractPriceFromText(trimmed);
+                if (!price) return;
+                
+                // 保存最低价
+                if (!prices[rune] || price < prices[rune]) {
+                    prices[rune] = price;
                 }
+            });
+            
+            // 方法2: 查找商品卡片
+            this.extractFromCards(prices);
+            
+        } catch (error) {
+            console.error('提取G2G价格失败:', error);
+        }
+        
+        return prices;
+    }
+    
+    extractDD373Prices() {
+        const prices = {};
+        
+        try {
+            // 方法1: 搜索整个页面
+            const allText = document.body.textContent;
+            const lines = allText.split('\n');
+            
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.length < 10) return;
+                
+                // 查找符文
+                const rune = this.findRuneInText(trimmed);
+                if (!rune) return;
+                
+                // 查找价格
+                const price = this.extractPriceFromText(trimmed);
+                if (!price) return;
+                
+                // 保存最低价
+                if (!prices[rune] || price < prices[rune]) {
+                    prices[rune] = price;
+                }
+            });
+            
+            // 方法2: 查找商品卡片
+            this.extractFromCards(prices);
+            
+        } catch (error) {
+            console.error('提取DD373价格失败:', error);
+        }
+        
+        return prices;
+    }
+    
+    extractFromCards(prices) {
+        // 尝试常见的选择器
+        const selectors = [
+            '.product-item', '.offer-item', '.listing-item',
+            '.goods-item', '.item', '.product',
+            '[class*="item"]', '[class*="product"]', '[class*="goods"]'
+        ];
+        
+        selectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                try {
+                    const text = element.textContent.trim();
+                    if (text.length < 10) return;
+                    
+                    const rune = this.findRuneInText(text);
+                    if (!rune) return;
+                    
+                    const price = this.extractPriceFromText(text);
+                    if (!price) return;
+                    
+                    if (!prices[rune] || price < prices[rune]) {
+                        prices[rune] = price;
+                    }
+                } catch (e) {
+                    // 忽略错误
+                }
+            });
+        });
+    }
+    
+    findRuneInText(text) {
+        const upperText = text.toUpperCase();
+        
+        // 匹配符文编号
+        for (const rune of Object.keys(this.runePatterns)) {
+            if (upperText.includes(rune)) {
+                return rune;
             }
         }
         
-        // 尝试数字匹配
-        const runeRegex = /(\d{2})#/;
-        const match = title.match(runeRegex);
-        if (match) {
-            const runeNumber = parseInt(match[1]);
-            if (runeNumber >= 23 && runeNumber <= 33) {
-                return match[0];
+        // 匹配符文名称
+        for (const [rune, patterns] of Object.entries(this.runePatterns)) {
+            for (const pattern of patterns) {
+                if (upperText.includes(pattern.toUpperCase())) {
+                    return rune;
+                }
             }
         }
         
@@ -281,23 +213,20 @@ class PageScraper {
     }
     
     extractPriceFromText(text) {
-        if (!text) return null;
-        
-        // 匹配各种价格格式
-        const pricePatterns = [
-            /[¥￥]\s*(\d+\.?\d*)/,           // ¥12.34
-            /(\d+\.?\d*)\s*[元]/i,           // 12.34元
-            /价格\s*[:：]?\s*(\d+\.?\d*)/i,   // 价格: 12.34
-            /cost\s*[:：]?\s*(\d+\.?\d*)/i,   // cost: 12.34
-            /(\d+\.?\d*)\s*CNY/i,            // 12.34 CNY
-            /(\d+\.?\d*)\s*RMB/i             // 12.34 RMB
+        // 价格匹配模式
+        const patterns = [
+            /[¥￥]\s*(\d+\.?\d*)/,
+            /(\d+\.?\d*)\s*[元]/,
+            /价格\s*[:：]?\s*(\d+\.?\d*)/i,
+            /￥\s*(\d+\.?\d*)/,
+            /CNY\s*(\d+\.?\d*)/i
         ];
         
-        for (const pattern of pricePatterns) {
+        for (const pattern of patterns) {
             const match = text.match(pattern);
             if (match && match[1]) {
                 const price = parseFloat(match[1]);
-                if (!isNaN(price) && price > 0) {
+                if (!isNaN(price) && price > 0 && price < 10000) {
                     return price;
                 }
             }
@@ -311,64 +240,111 @@ class PageScraper {
             action: 'pagePrices',
             site: this.currentSite,
             prices: prices,
-            timestamp: new Date().toISOString(),
-            url: window.location.href
+            timestamp: new Date().toISOString()
         }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error('发送价格数据失败:', chrome.runtime.lastError);
-            } else if (response && response.success) {
-                console.log('价格数据已发送到后台');
+                console.error('发送价格失败:', chrome.runtime.lastError);
             }
         });
     }
     
-    // 在页面上显示提取的信息（调试用）
-    showDebugInfo(prices) {
-        const debugDiv = document.createElement('div');
-        debugDiv.style.cssText = `
+    addMonitoringUI() {
+        // 创建监控UI
+        const ui = document.createElement('div');
+        ui.id = 'd2r-monitor';
+        ui.style.cssText = `
             position: fixed;
             top: 10px;
             right: 10px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             color: white;
             padding: 10px;
             border-radius: 5px;
             z-index: 9999;
             font-size: 12px;
-            max-width: 300px;
-            max-height: 400px;
-            overflow-y: auto;
+            max-width: 250px;
+            border: 1px solid #4a6fa5;
         `;
         
-        let html = `<strong>D2R监控器 (${this.currentSite.toUpperCase()})</strong><br>`;
-        html += `<small>提取到 ${Object.keys(prices).length} 个符文价格</small><br><br>`;
+        ui.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <strong style="color: #4a6fa5;">D2R监控器</strong>
+                <span id="d2r-site">${this.currentSite.toUpperCase()}</span>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <span style="color: #aaa;">状态: </span>
+                <span id="d2r-status" style="color: #4CAF50;">监控中</span>
+            </div>
+            <div id="d2r-prices" style="max-height: 150px; overflow-y: auto;">
+                <div style="color: #888; font-style: italic;">等待数据...</div>
+            </div>
+            <div style="margin-top: 5px; font-size: 10px; color: #888; text-align: right;">
+                更新: <span id="d2r-update-time">刚刚</span>
+            </div>
+        `;
         
-        Object.entries(prices).forEach(([rune, price]) => {
-            html += `${rune}: ¥${price.toFixed(2)}<br>`;
-        });
+        document.body.appendChild(ui);
+    }
+    
+    updateMonitoringUI(prices) {
+        const ui = document.getElementById('d2r-monitor');
+        if (!ui) return;
         
-        debugDiv.innerHTML = html;
-        document.body.appendChild(debugDiv);
-        
-        // 5秒后自动移除
-        setTimeout(() => {
-            if (debugDiv.parentNode) {
-                debugDiv.parentNode.removeChild(debugDiv);
+        // 更新价格显示
+        const pricesEl = ui.querySelector('#d2r-prices');
+        if (pricesEl) {
+            if (Object.keys(prices).length === 0) {
+                pricesEl.innerHTML = '<div style="color: #888; font-style: italic;">未找到价格</div>';
+            } else {
+                let html = '';
+                Object.entries(prices).forEach(([rune, price]) => {
+                    html += `<div style="margin-bottom: 2px;">
+                        <span style="color: #4a6fa5;">${rune}</span>: 
+                        <span style="color: #FFD700;">¥${price.toFixed(2)}</span>
+                    </div>`;
+                });
+                pricesEl.innerHTML = html;
             }
-        }, 5000);
+        }
+        
+        // 更新时间
+        const timeEl = ui.querySelector('#d2r-update-time');
+        if (timeEl) {
+            const now = new Date();
+            timeEl.textContent = now.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+        
+        // 更新状态
+        const statusEl = ui.querySelector('#d2r-status');
+        if (statusEl) {
+            statusEl.textContent = `找到 ${Object.keys(prices).length} 个符文`;
+            statusEl.style.color = Object.keys(prices).length > 0 ? '#4CAF50' : '#FF9800';
+        }
+    }
+    
+    cleanup() {
+        if (this.monitorInterval) {
+            clearInterval(this.monitorInterval);
+        }
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+        
+        const ui = document.getElementById('d2r-monitor');
+        if (ui) {
+            ui.remove();
+        }
     }
 }
 
-// 页面加载完成后初始化
+// 初始化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        window.scraper = new PageScraper();
+        window.d2rScraper = new D2RPriceScraper();
     });
 } else {
-    window.scraper = new PageScraper();
-}
-
-// 导出用于测试
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { PageScraper };
+    window.d2rScraper = new D2RPriceScraper();
 }
