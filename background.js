@@ -101,7 +101,7 @@ class BackgroundService {
                     action: 'pricesUpdated',
                     prices: updatedPrices
                 }).catch(() => {
-                    // popup可能未打开，忽略错误
+                    // popup may not be open, ignore error
                 });
             });
         });

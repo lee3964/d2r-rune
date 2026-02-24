@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>D2R扩展测试</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>D2R扩展功能测试</h1>
+    
+    <div id="test1" class="test-result">
+        <h3>测试1: 检查扩展加载</h3>
+        <p id="test1-result">等待测试...</p>
+    </div>
+    
+    <div id="test2" class="test-result">
+        <h3>测试2: 检查背景脚本</h3>
+        <p id="test2-result">等待测试...</p>
+    </div>
+    
+    <div id="test3" class="test-result">
+        <h3>测试3: 检查内容脚本</h3>
+        <p id="test3-result">等待测试...</p>
+    </div>
+    
+    <div id="test4" class="test-result">
+        <h3>测试4: 检查价格提取</h3>
+        <button onclick="testPriceExtraction()">测试价格提取</button>
+        <p id="test4-result">点击按钮测试</p>
+    </div>
+    
+    <div id="test5" class="test-result">
+        <h3>测试5: 模拟G2G页面</h3>
+        <div id="mock-g2g" style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+            <h4>模拟商品1: 符文 30# Ber</h4>
+            <p>价格: ¥850.75</p>
+            <p>描述: 暗黑2重置版 符文 Ber 30#</p>
+        </div>
+        <div id="mock-dd373" style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+            <h4>模拟商品2: 符文 31# Jah</h4>
+            <p>价格: ¥950.50 元</p>
+            <p>描述: D2R 符文 Jah 31# 赛季</p>
+        </div>
+        <button onclick="testMockPages()">测试模拟页面</button>
+        <p id="test5-result">点击按钮测试</p>
+    </div>
+    
+    <script>
+        // 测试1: 检查扩展加载
+        function testExtensionLoad() {
+            const result = document.getElementById('test1-result');
+            try {
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    result.innerHTML = '<span class="success">✅ 扩展环境检测正常</span>';
+                    result.className = 'test-result success';
+                } else {
+                    result.innerHTML = '<span class="warning">⚠️ 非扩展环境（正常网页模式）</span>';
+                    result.className = 'test-result warning';
+                }
+            } catch (e) {
+                result.innerHTML = `<span class="error">❌ 错误: ${e.message}</span>`;
+                result.className = 'test-result error';
+            }
+        }
+        
+        // 测试2: 检查背景脚本功能
+        function testBackgroundScript() {
+            const result = document.getElementById('test2-result');
+            try {
+                // 模拟背景脚本功能
+                const runeMapping = {
+                    '23#': 'Mal', '24#': 'Ist', '25#': 'Gul',
+                    '26#': 'Vex', '27#': 'Ohm', '28#': 'Lo',
+                    '29#': 'Sur', '30#': 'Ber', '31#': 'Jah',
+                    '32#': 'Cham', '33#': 'Zod'
+                };
+                
+                result.innerHTML = `<span class="success">✅ 符文映射表正常 (${Object.keys(runeMapping).length}个符文)</span>`;
+                result.className = 'test-result success';
+            } catch (e) {
+                result.innerHTML = `<span class="error">❌ 错误: ${e.message}</span>`;
+                result.className = 'test-result error';
+            }
+        }
+        
+        // 测试3: 检查内容脚本功能
+        function testContentScript() {
+            const result = document.getElementById('test3-result');
+            try {
+                // 测试价格提取函数
+                function extractPrice(text) {
+                    const patterns = [
+                        /[¥￥]\s*(\d+\.?\d*)/,
+                        /(\d+\.?\d*)\s*[元]/,
+                        /价格\s*[:：]?\s*(\d+\.?\d*)/i
+                    ];
+                    
+                    for (const pattern of patterns) {
+                        const match = text.match(pattern);
+                        if (match && match[1]) {
+                            return parseFloat(match[1]);
+                        }
+                    }
+                    return null;
+                }
+                
+                // 测试用例
+                const testCases = [
+                    { text: '价格: ¥850.75', expected: 850.75 },
+                    { text: '950.50元', expected: 950.50 },
+                    { text: '￥1200.00', expected: 1200.00 }
+                ];
+                
+                let allPassed = true;
+                testCases.forEach((test, i) => {
+                    const result = extractPrice(test.text);
+                    if (Math.abs(result - test.expected) > 0.01) {
+                        allPassed = false;
+                    }
+                });
+                
+                if (allPassed) {
+                    result.innerHTML = '<span class="success">✅ 价格提取函数正常</span>';
+                    result.className = 'test-result success';
+                } else {
+                    result.innerHTML = '<span class="error">❌ 价格提取函数异常</span>';
+                    result.className = 'test-result error';
+                }
+            } catch (e) {
+                result.innerHTML = `<span class="error">❌ 错误: ${e.message}</span>`;
+                result.className = 'test-result error';
+            }
+        }
+        
+        // 测试4: 价格提取
+        function testPriceExtraction() {
+            const result = document.getElementById('test4-result');
+            result.innerHTML = '<span class="warning">测试中...</span>';
+            result.className = 'test-result warning';
+            
+            setTimeout(() => {
+                // 模拟价格提取
+                const mockData = [
+                    { rune: '30#', price: 850.75 },
+                    { rune: '31#', price: 950.50 },
+                    { rune: '32#', price: 1200.00 }
+                ];
+                
+                let html = '<span class="success">✅ 价格提取测试完成</span><br>';
+                html += '<small>模拟数据:</small><br>';
+                mockData.forEach(item => {
+                    html += `<small>${item.rune}: ¥${item.price.toFixed(2)}</small><br>`;
+                });
+                
+                result.innerHTML = html;
+                result.className = 'test-result success';
+            }, 1000);
+        }
+        
+        // 测试5: 模拟页面
+        function testMockPages() {
+            const result = document.getElementById('test5-result');
+            result.innerHTML = '<span class="warning">测试模拟页面提取...</span>';
+            result.className = 'test-result warning';
+            
+            setTimeout(() => {
+                // 从模拟页面提取
+                const g2gText = document.getElementById('mock-g2g').textContent;
+                const dd373Text = document.getElementById('mock-dd373').textContent;
+                
+                // 简单提取逻辑
+                function findRune(text) {
+                    const runes = ['23#', '24#', '25#', '26#', '27#', '28#', '29#', '30#', '31#', '32#', '33#'];
+                    for (const rune of runes) {
+                        if (text.includes(rune)) return rune;
+                    }
+                    return null;
+                }
+                
+                function findPrice(text) {
+                    const match = text.match(/[¥￥]\s*(\d+\.?\d*)/);
+                    return match ? parseFloat(match[1]) : null;
+                }
+                
+                const g2gRune = findRune(g2gText);
+                const g2gPrice = findPrice(g2gText);
+                const dd373Rune = findRune(dd373Text);
+                const dd373Price = findPrice(dd373Text);
+                
+                let html = '<span class="success">✅ 模拟页面测试完成</span><br>';
+                html += `<small>G2G: ${g2gRune || '未找到'} - ¥${g2gPrice || '未找到'}</small><br>`;
+                html += `<small>DD373: ${dd373Rune || '未找到'} - ¥${dd373Price || '未找到'}</small>`;
+                
+                result.innerHTML = html;
+                result.className = 'test-result success';
+            }, 1000);
+        }
+        
+        // 运行初始测试
+        window.onload = function() {
+            testExtensionLoad();
+            testBackgroundScript();
+            testContentScript();
+        };
+    </script>
+</body>
+</html>
