@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>D2R扩展调试工具</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #4a6fa5; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .log { background: #333; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .status { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 D2R扩展调试工具</h1>
+        
+        <div class="card">
+            <h2>1. 扩展状态检查</h2>
+            <button class="btn btn-primary" onclick="checkExtensionStatus()">检查扩展状态</button>
+            <div id="extensionStatus" class="status">等待检查...</div>
+        </div>
+        
+        <div class="card">
+            <h2>2. 存储数据检查</h2>
+            <button class="btn btn-primary" onclick="checkStorageData()">检查存储数据</button>
+            <div id="storageData" class="log">点击按钮查看...</div>
+        </div>
+        
+        <div class="card">
+            <h2>3. 价格数据操作</h2>
+            <button class="btn btn-success" onclick="fetchPrices()">手动获取价格</button>
+            <button class="btn btn-primary" onclick="clearStorage()">清除存储数据</button>
+            <button class="btn btn-danger" onclick="resetExtension()">重置扩展</button>
+            <div id="priceData" class="log">操作结果将显示在这里...</div>
+        </div>
+        
+        <div class="card">
+            <h2>4. 模拟价格数据</h2>
+            <button class="btn btn-primary" onclick="addMockData()">添加模拟数据</button>
+            <div id="mockDataResult" class="status">等待操作...</div>
+        </div>
+        
+        <div class="card">
+            <h2>5. 实时日志</h2>
+            <button class="btn btn-primary" onclick="startLogging()">开始日志记录</button>
+            <button class="btn btn-danger" onclick="stopLogging()">停止日志记录</button>
+            <div id="liveLog" class="log">日志将显示在这里...</div>
+        </div>
+        
+        <div class="card">
+            <h2>6. 内容脚本测试</h2>
+            <p>打开以下网站测试内容脚本：</p>
+            <ul>
+                <li><a href="https://www.g2g.com/cn/categories/diablo-2-resurrected-item-for-sale?fa=7075ff24%3Ac16696b1%7C7071deb3%3A4d2c8b55%7Cec59a3aa%3A9fa18172,53c0e8e3,28b7948c,d9ab9405,274a78dd,7c273a77,c41e297e,caa33535,b980ce6c,b3984b8d,e6414e3b&sort=lowest_price" target="_blank">G2G测试页面</a></li>
+                <li><a href="https://www.dd373.com/s-1psrbm-u6w1hm-hx35xs-0-0-0-sndbsb-0-0-0-0-0-1-20-0-1.html?qufu=true" target="_blank">DD373测试页面</a></li>
+            </ul>
+            <div id="contentScriptStatus" class="status">等待测试...</div>
+        </div>
+    </div>
+    
+    <script>
+        let logInterval;
+        
+        // 1. 检查扩展状态
+        function checkExtensionStatus() {
+            const statusEl = document.getElementById('extensionStatus');
+            statusEl.innerHTML = '检查中...';
+            statusEl.className = 'status status-warning';
+            
+            try {
+                // 检查chrome API
+                if (typeof chrome === 'undefined' || !chrome.runtime) {
+                    statusEl.innerHTML = '❌ Chrome扩展API不可用（可能不是扩展环境）';
+                    statusEl.className = 'status status-error';
+                    return;
+                }
+                
+                // 获取扩展信息
+                const manifest = chrome.runtime.getManifest();
+                
+                let html = `<div class="status-success">✅ 扩展状态正常</div>`;
+                html += `<div><strong>名称:</strong> ${manifest.name}</div>`;
+                html += `<div><strong>版本:</strong> ${manifest.version}</div>`;
+                html += `<div><strong>描述:</strong> ${manifest.description}</div>`;
+                html += `<div><strong>权限:</strong> ${JSON.stringify(manifest.permissions)}</div>`;
+                
+                statusEl.innerHTML = html;
+                statusEl.className = 'status status-success';
+                
+            } catch (error) {
+                statusEl.innerHTML = `❌ 错误: ${error.message}`;
+                statusEl.className = 'status status-error';
+            }
+        }
+        
+        // 2. 检查存储数据
+        function checkStorageData() {
+            const dataEl = document.getElementById('storageData');
+            dataEl.innerHTML = '读取中...';
+            
+            chrome.storage.local.get(null, (result) => {
+                let html = '<strong>所有存储数据:</strong><br>';
+                
+                if (Object.keys(result).length === 0) {
+                    html += '⚠️ 存储为空';
+                } else {
+                    for (const [key, value] of Object.entries(result)) {
+                        html += `<br><strong>${key}:</strong><br>`;
+                        html += `<pre>${JSON.stringify(value, null, 2)}</pre>`;
+                    }
+                }
+                
+                dataEl.innerHTML = html;
+            });
+        }
+        
+        // 3. 手动获取价格
+        function fetchPrices() {
+            const dataEl = document.getElementById('priceData');
+            dataEl.innerHTML = '请求中...';
+            
+            chrome.runtime.sendMessage({ action: 'fetchPrices' }, (response) => {
+                if (response && response.success) {
+                    dataEl.innerHTML = `<div class="status-success">✅ 价格获取成功</div><pre>${JSON.stringify(response.prices, null, 2)}</pre>`;
+                } else {
+                    dataEl.innerHTML = `<div class="status-error">❌ 价格获取失败: ${response?.error || '未知错误'}</div>`;
+                }
+            });
+        }
+        
+        // 清除存储数据
+        function clearStorage() {
+            if (confirm('确定要清除所有存储数据吗？')) {
+                chrome.storage.local.clear(() => {
+                    document.getElementById('priceData').innerHTML = '<div class="status-success">✅ 存储数据已清除</div>';
+                    checkStorageData();
+                });
+            }
+        }
+        
+        // 重置扩展
+        function resetExtension() {
+            if (confirm('确定要重置扩展吗？这将清除所有数据并重新加载扩展。')) {
+                chrome.storage.local.clear(() => {
+                    chrome.runtime.reload();
+                    document.getElementById('priceData').innerHTML = '<div class="status-success">✅ 扩展已重置，正在重新加载...</div>';
+                });
+            }
+        }
+        
+        // 4. 添加模拟数据
+        function addMockData() {
+            const resultEl = document.getElementById('mockDataResult');
+            resultEl.innerHTML = '添加中...';
+            resultEl.className = 'status status-warning';
+            
+            const mockPrices = {
+                '30#': {
+                    rune: '30#',
+                    name: 'Ber',
+                    g2gPrice: 850.75,
+                    dd373Price: 720.30,
+                    lastUpdated: new Date().toISOString()
+                },
+                '31#': {
+                    rune: '31#',
+                    name: 'Jah',
+                    g2gPrice: 950.50,
+                    dd373Price: 850.50,
+                    lastUpdated: new Date().toISOString()
+                },
+                '32#': {
+                    rune: '32#',
+                    name: 'Cham',
+                    g2gPrice: 1200.00,
+                    dd373Price: 1100.00,
+                    lastUpdated: new Date().toISOString()
+                }
+            };
+            
+            chrome.storage.local.set({ d2rPrices: mockPrices }, () => {
+                resultEl.innerHTML = '<div class="status-success">✅ 模拟数据添加成功！</div>';
+                resultEl.className = 'status status-success';
+                checkStorageData();
+                
+                // 通知popup更新
+                chrome.runtime.sendMessage({
+                    action: 'pricesUpdated',
+                    prices: mockPrices
+                });
+            });
+        }
+        
+        // 5. 实时日志
+        function startLogging() {
+            const logEl = document.getElementById('liveLog');
+            logEl.innerHTML = '开始记录日志...\n';
+            
+            // 监听来自内容脚本的消息
+            chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+                if (message.action === 'debug' || message.action === 'pagePrices') {
+                    const time = new Date().toLocaleTimeString();
+                    logEl.innerHTML += `[${time}] ${message.action}: ${JSON.stringify(message.data || message.prices || {})}\n`;
+                    logEl.scrollTop = logEl.scrollHeight;
+                }
+                sendResponse({ received: true });
+                return true;
+            });
+            
+            logInterval = setInterval(() => {
+                const time = new Date().toLocaleTimeString();
+                logEl.innerHTML += `[${time}] 心跳...\n`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }, 5000);
+        }
+        
+        function stopLogging() {
+            if (logInterval) {
+                clearInterval(logInterval);
+                const logEl = document.getElementById('liveLog');
+                logEl.innerHTML += '日志记录已停止\n';
+            }
+        }
+        
+        // 6. 内容脚本测试
+        function testContentScript() {
+            const statusEl = document.getElementById('contentScriptStatus');
+            statusEl.innerHTML = '测试中...';
+            
+            // 模拟发送消息到内容脚本
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, { action: 'test' }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            statusEl.innerHTML = `❌ 内容脚本未响应: ${chrome.runtime.lastError.message}`;
+                            statusEl.className = 'status status-error';
+                        } else {
+                            statusEl.innerHTML = '✅ 内容脚本响应正常';
+                            statusEl.className = 'status status-success';
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkExtensionStatus();
+            checkStorageData();
+        };
+    </script>
+</body>
+</html>

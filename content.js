@@ -37,13 +37,21 @@ class D2RPriceScraper {
     init() {
         if (!this.currentSite) return;
         
-        console.log(`D2R监控器: 检测到${this.currentSite.toUpperCase()}网站`);
+        console.log(`🎯 D2R监控器: 检测到${this.currentSite.toUpperCase()}网站，开始初始化...`);
+        console.log(`📄 页面URL: ${window.location.href}`);
         
         // 开始监控
         this.startMonitoring();
         
         // 添加监控UI
         this.addMonitoringUI();
+        
+        // 发送初始化成功消息
+        this.sendDebugMessage('content_script_initialized', {
+            site: this.currentSite,
+            url: window.location.href,
+            timestamp: new Date().toISOString()
+        });
     }
     
     startMonitoring() {
@@ -236,14 +244,31 @@ class D2RPriceScraper {
     }
     
     sendPricesToBackground(prices) {
+        console.log(`📤 发送价格数据到后台:`, prices);
+        
         chrome.runtime.sendMessage({
             action: 'pagePrices',
             site: this.currentSite,
             prices: prices,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            url: window.location.href
         }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error('发送价格失败:', chrome.runtime.lastError);
+                console.error('❌ 发送价格失败:', chrome.runtime.lastError);
+            } else {
+                console.log('✅ 价格数据发送成功');
+            }
+        });
+    }
+    
+    sendDebugMessage(type, data) {
+        chrome.runtime.sendMessage({
+            action: 'debug',
+            type: type,
+            data: data
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error('调试消息发送失败:', chrome.runtime.lastError);
             }
         });
     }

@@ -51,8 +51,16 @@ class BackgroundService {
                     
                 case 'pagePrices':
                     // 接收来自内容脚本的价格数据
-                    console.log(`收到${message.site}价格数据:`, message.prices);
+                    console.log(`📥 收到${message.site}价格数据:`, message.prices);
+                    console.log(`🔗 来源URL: ${message.url}`);
+                    console.log(`🕒 时间戳: ${message.timestamp}`);
                     this.processPagePrices(message.site, message.prices);
+                    sendResponse({ success: true, received: Object.keys(message.prices).length });
+                    break;
+                    
+                case 'debug':
+                    // 处理调试消息
+                    console.log(`🐛 调试消息 [${message.type}]:`, message.data);
                     sendResponse({ success: true });
                     break;
                     
