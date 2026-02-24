@@ -5,7 +5,8 @@
   "description": "Monitor D2R rune prices on G2G and DD373, calculate arbitrage profits",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "alarms"
   ],
   "host_permissions": [
     "https://www.g2g.com/*",

@@ -27,6 +27,16 @@ class BackgroundService {
             return true; // 保持消息通道开放用于异步响应
         });
         
+        // 监听定时任务
+        if (chrome.alarms) {
+            chrome.alarms.onAlarm.addListener((alarm) => {
+                if (alarm.name === 'autoRefresh') {
+                    console.log('⏰ 定时任务触发，自动更新价格');
+                    this.fetchAllPrices();
+                }
+            });
+        }
+        
         // 监听扩展安装/更新
         chrome.runtime.onInstalled.addListener(() => {
             this.onInstalled();
@@ -135,10 +145,19 @@ class BackgroundService {
             }
         });
         
-        // 创建定时任务
-        chrome.alarms.create('autoRefresh', {
-            periodInMinutes: 3
-        });
+        // 创建定时任务（检查alarms权限）
+        if (chrome.alarms) {
+            chrome.alarms.create('autoRefresh', {
+                periodInMinutes: 3
+            });
+            console.log('⏰ 定时任务创建成功');
+        } else {
+            console.warn('⚠️ alarms权限未启用，使用setInterval代替');
+            // 使用setInterval作为后备
+            setInterval(() => {
+                this.fetchAllPrices();
+            }, 3 * 60 * 1000); // 3分钟
+        }
     }
     
     initializePrices() {

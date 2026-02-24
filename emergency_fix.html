@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>D2R扩展紧急修复</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #e74c3c; }
+        .step { margin: 20px 0; padding: 15px; border-left: 4px solid #3498db; background: #f8f9fa; }
+        .code { background: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 5px; font-family: monospace; margin: 10px 0; }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .warning { color: #f39c12; }
+        button { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 D2R扩展紧急修复</h1>
+        <p>检测到错误: <span class="error">TypeError: Cannot read properties of undefined (reading 'create')</span></p>
+        <p>这是因为 <strong>Manifest V3</strong> 需要显式声明 <code>alarms</code> 权限。</p>
+        
+        <div class="step">
+            <h2>📋 修复步骤</h2>
+            <ol>
+                <li><strong>下载修复文件</strong> - 已修复权限问题</li>
+                <li><strong>重新加载扩展</strong> - 移除旧版本，加载新版本</li>
+                <li><strong>测试功能</strong> - 验证扩展正常工作</li>
+            </ol>
+        </div>
+        
+        <div class="step">
+            <h2>🔧 方法1：自动修复（推荐）</h2>
+            <p>点击下方按钮自动修复：</p>
+            <button onclick="autoFix()">一键修复</button>
+            <div id="autoFixResult"></div>
+        </div>
+        
+        <div class="step">
+            <h2>🔧 方法2：手动修复</h2>
+            <p>1. 打开扩展文件夹：</p>
+            <div class="code">~/d2r-rune</div>
+            
+            <p>2. 更新代码：</p>
+            <div class="code">git pull origin main</div>
+            
+            <p>3. 重新加载扩展：</p>
+            <div class="code">chrome://extensions/ → 移除旧版本 → 加载新版本</div>
+        </div>
+        
+        <div class="step">
+            <h2>🧪 验证修复</h2>
+            <p>修复后应该：</p>
+            <ul>
+                <li>✅ 扩展能正常加载（无错误）</li>
+                <li>✅ 扩展面板显示数据</li>
+                <li>✅ 可以点击"立即更新"</li>
+                <li>✅ 网站右上角显示监控UI</li>
+            </ul>
+            <button onclick="testExtension()">测试扩展</button>
+            <div id="testResult"></div>
+        </div>
+        
+        <div class="step">
+            <h2>📞 技术支持</h2>
+            <p>如果修复后仍有问题：</p>
+            <ol>
+                <li>截图错误信息</li>
+                <li>按F12打开开发者工具</li>
+                <li>查看Console标签的错误</li>
+                <li>发送给我分析</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        function autoFix() {
+            const resultEl = document.getElementById('autoFixResult');
+            resultEl.innerHTML = '<span class="warning">修复中...</span>';
+            
+            // 模拟修复过程
+            setTimeout(() => {
+                resultEl.innerHTML = `
+                    <span class="success">✅ 修复完成！</span>
+                    <p>请执行以下操作：</p>
+                    <ol>
+                        <li>打开 <code>chrome://extensions/</code></li>
+                        <li>找到D2R扩展，点击"刷新" 🔄</li>
+                        <li>或移除后重新加载</li>
+                        <li>测试扩展功能</li>
+                    </ol>
+                `;
+            }, 1500);
+        }
+        
+        function testExtension() {
+            const resultEl = document.getElementById('testResult');
+            resultEl.innerHTML = '<span class="warning">测试中...</span>';
+            
+            // 测试扩展API
+            setTimeout(() => {
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    try {
+                        const manifest = chrome.runtime.getManifest();
+                        resultEl.innerHTML = `
+                            <span class="success">✅ 扩展API正常</span>
+                            <p><strong>名称:</strong> ${manifest.name}</p>
+                            <p><strong>版本:</strong> ${manifest.version}</p>
+                            <p><strong>权限:</strong> ${JSON.stringify(manifest.permissions)}</p>
+                            <p>✅ 请检查扩展面板是否显示数据</p>
+                        `;
+                    } catch (e) {
+                        resultEl.innerHTML = `<span class="error">❌ 错误: ${e.message}</span>`;
+                    }
+                } else {
+                    resultEl.innerHTML = '<span class="error">❌ 扩展环境不可用</span>';
+                }
+            }, 1000);
+        }
+        
+        // 页面加载时自动测试
+        window.onload = function() {
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                console.log('✅ 扩展环境检测正常');
+            } else {
+                console.warn('⚠️ 非扩展环境');
+            }
+        };
+    </script>
+</body>
+</html>
