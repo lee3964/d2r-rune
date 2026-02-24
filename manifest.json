@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "D2R符文套利监控器",
+  "version": "1.0.0",
+  "description": "实时监控G2G和DD373的符文价格，计算套利利润",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.g2g.com/*",
+    "https://www.dd373.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.g2g.com/cn/categories/diablo-2-resurrected-item-for-sale*",
+        "https://www.dd373.com/s-1psrbm-u6w1hm-hx35xs-0-0-0-sndbsb-0-0-0-0-0-1-20-0-1.html*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

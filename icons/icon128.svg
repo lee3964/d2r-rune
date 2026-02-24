@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#4a6fa5" rx="20"/>
+  <text x="64" y="75" text-anchor="middle" fill="white" font-size="32" font-weight="bold">D2R</text>
+  <text x="64" y="100" text-anchor="middle" fill="#ffd700" font-size="18" font-weight="bold">符文套利</text>
+</svg>

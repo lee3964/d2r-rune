@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D2R符文套利监控</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-coins"></i> D2R符文套利监控</h1>
+            <div class="status">
+                <span id="status" class="status-idle">等待更新...</span>
+                <span id="lastUpdate">从未更新</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button id="refreshBtn" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> 立即更新
+            </button>
+            <button id="settingsBtn" class="btn btn-secondary">
+                <i class="fas fa-cog"></i> 设置
+            </button>
+            <button id="exportBtn" class="btn btn-secondary">
+                <i class="fas fa-download"></i> 导出
+            </button>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="sortBy">排序方式:</label>
+                <select id="sortBy">
+                    <option value="profit">利润最高优先</option>
+                    <option value="profitRate">利润率最高优先</option>
+                    <option value="runeNumber">符文编号</option>
+                    <option value="g2gPrice">G2G价格</option>
+                    <option value="dd373Price">DD373价格</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="minProfit">最小利润:</label>
+                <input type="number" id="minProfit" value="5" min="0" step="1"> CNY
+            </div>
+            <div class="filter-group">
+                <label for="minProfitRate">最小利润率:</label>
+                <input type="number" id="minProfitRate" value="10" min="0" step="1"> %
+            </div>
+        </div>
+
+        <div class="summary">
+            <div class="summary-item">
+                <span class="summary-label">最佳套利:</span>
+                <span id="bestRune" class="summary-value">-</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">最大利润:</span>
+                <span id="maxProfit" class="summary-value">- CNY</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">平均利润率:</span>
+                <span id="avgProfitRate" class="summary-value">- %</span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="priceTable">
+                <thead>
+                    <tr>
+                        <th>符文</th>
+                        <th>名称</th>
+                        <th>DD373采购价 <i class="fas fa-shopping-cart"></i></th>
+                        <th>G2G销售价 <i class="fas fa-store"></i></th>
+                        <th>利润 <i class="fas fa-money-bill-wave"></i></th>
+                        <th>利润率 <i class="fas fa-chart-line"></i></th>
+                        <th>推荐 <i class="fas fa-star"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="priceTableBody">
+                    <!-- 数据将通过JavaScript动态填充 -->
+                    <tr class="loading-row">
+                        <td colspan="7">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i> 加载价格数据中...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <div class="fee-info">
+                <span>手续费: G2G 9% | DD373 5%</span>
+            </div>
+            <div class="update-info">
+                <span>自动更新: 每3分钟</span>
+                <button id="autoRefreshToggle" class="btn-toggle active">
+                    <i class="fas fa-toggle-on"></i> 开启
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置模态框 -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> 设置</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="updateInterval">更新频率 (分钟):</label>
+                    <input type="number" id="updateInterval" value="3" min="1" max="60">
+                </div>
+                <div class="setting-group">
+                    <label for="notificationThreshold">利润通知阈值 (CNY):</label>
+                    <input type="number" id="notificationThreshold" value="20" min="0">
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="enableNotifications" checked>
+                        启用浏览器通知
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="highlightBest" checked>
+                        高亮最佳套利
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label for="githubToken">GitHub Token (Gist同步):</label>
+                    <input type="password" id="githubToken" placeholder="可选: 输入GitHub Token">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettings" class="btn btn-primary">保存设置</button>
+                <button class="btn btn-secondary close-modal">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
